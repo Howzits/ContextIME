@@ -14,13 +14,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Howzits/ContextIME/releases/tag/v0.4.1"><img src="https://img.shields.io/badge/version-0.4.1-6574F7?style=flat-square" alt="Version 0.4.1"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=ContextIME.codex-terminal-auto-input"><img src="https://img.shields.io/visual-studio-marketplace/v/ContextIME.codex-terminal-auto-input?style=flat-square&amp;color=6574F7&amp;label=Marketplace" alt="Visual Studio Marketplace version"></a>
   <img src="https://img.shields.io/badge/platform-Windows_x64-1678D4?style=flat-square" alt="Windows x64">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-20B886?style=flat-square" alt="MIT License"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Howzits/ContextIME/releases/download/v0.4.1/ContextIME-0.4.1.vsix"><strong>下载安装</strong></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=ContextIME.codex-terminal-auto-input"><strong>从 VS Code 市场安装</strong></a>
   &nbsp;·&nbsp;
   <a href="#安装与使用">快速开始</a>
   &nbsp;·&nbsp;
@@ -47,9 +47,9 @@ ContextIME 把输入法切换放在焦点变化时处理。典型使用流程是
 
 切换后仍可手动选择中英文。在同一个输入框里，扩展不会持续把你的选择改回去。
 
-> 目前为早期版本。自动切换依赖控件的辅助功能信息和输入法对 Windows 请求的支持；不同聊天插件、输入法的实际效果可能不同，详见[兼容性记录](docs/COMPATIBILITY.md)。
+自动切换依赖控件的辅助功能信息和输入法对 Windows 请求的支持。不同聊天插件、输入法的实际效果可能不同，适配范围和待实测项目见[兼容性记录](docs/COMPATIBILITY.md)。
 
-## 为什么试试 ContextIME？
+## 让输入法跟上你的工作节奏
 
 - **围绕你的工作流切换。** 集成终端默认英文，聊天和对话框的可编辑输入区域默认中文，无需针对每个 AI 助手单独设置。
 - **沿用你习惯的输入法。** 读取 Windows 默认输入语言和已安装布局，不写死美式键盘，也不要求额外安装英语键盘。
@@ -61,12 +61,25 @@ ContextIME 把输入法切换放在焦点变化时处理。典型使用流程是
 
 需要 **Windows x64、VS Code 1.96+ 或 VS Code Insiders**，以及已配置的中文输入法。
 
-1. [下载已编译的 VSIX 安装包](https://github.com/Howzits/ContextIME/releases/download/v0.4.1/ContextIME-0.4.1.vsix)，无需自行编译。
-2. 打开 VS Code 扩展视图，点击右上角 `… → 从 VSIX 安装…`，选择下载的文件。
-3. 必要时运行 `Developer: Reload Window`；升级后建议重载所有 VS Code 窗口。
-4. 在聊天输入框和集成终端之间切换，分别试打中文和英文。
+1. 打开 VS Code 扩展视图（`Ctrl+Shift+X`），搜索 **ContextIME**，确认发布者为 **ContextIME** 后安装；也可[直接打开市场详情页](https://marketplace.visualstudio.com/items?itemName=ContextIME.codex-terminal-auto-input)。
+2. 安装后默认启用，状态栏显示 **ContextIME**；如有重载提示，按提示重新加载窗口。
+3. 在聊天输入框和集成终端之间切换，分别试打中文和英文，确认当前输入法的切换效果。
 
-安装后默认启用，状态栏显示 **ContextIME**。不需要另开托盘程序。当前提供本地 VSIX 下载，尚未发布到插件市场。
+也可以直接使用命令行安装：
+
+```powershell
+code --install-extension ContextIME.codex-terminal-auto-input
+```
+
+找不到搜索结果时，在扩展搜索框输入完整 ID：
+
+```text
+@id:ContextIME.codex-terminal-auto-input
+```
+
+无需自行编译或另开托盘程序。需要离线安装时，参见[离线安装与旧版迁移](docs/USAGE.md#安装与旧版迁移)。
+
+> 使用过早期本地版？请先卸载发布者为 `local-tools` 的旧版本，再安装市场版，避免两个扩展同时切换输入法。
 
 ## 按你的习惯调整
 
@@ -105,7 +118,7 @@ ContextIME 把输入法切换放在焦点变化时处理。典型使用流程是
 
 项目提供源码、编译脚本和[兼容性检查方法](docs/COMPATIBILITY.md)，也欢迎贡献适配和实测结果。
 
-[下载试用](https://github.com/Howzits/ContextIME/releases/download/v0.4.1/ContextIME-0.4.1.vsix) · [历史版本](https://github.com/Howzits/ContextIME/releases) · [查看更新](CHANGELOG.md)
+[从市场安装](https://marketplace.visualstudio.com/items?itemName=ContextIME.codex-terminal-auto-input) · [GitHub Releases](https://github.com/Howzits/ContextIME/releases) · [查看更新](CHANGELOG.md)
 
 ## English
 
@@ -113,7 +126,13 @@ ContextIME 把输入法切换放在焦点变化时处理。典型使用流程是
 
 ContextIME requests IME changes as you move between chat inputs and the integrated terminal in Windows VS Code. It uses configured Windows input methods, supports session-scoped input preferences, and leaves code editors and password fields unchanged. Accessibility and IME support vary; a requested state is not a verified input state.
 
-[Download the VSIX](https://github.com/Howzits/ContextIME/releases/download/v0.4.1/ContextIME-0.4.1.vsix) · [Compatibility](docs/COMPATIBILITY.md)
+[Install from the Marketplace](https://marketplace.visualstudio.com/items?itemName=ContextIME.codex-terminal-auto-input) · [Compatibility](docs/COMPATIBILITY.md)
+
+```powershell
+code --install-extension ContextIME.codex-terminal-auto-input
+```
+
+If you used the earlier local build, uninstall `local-tools.codex-terminal-auto-input` before installing the Marketplace edition to avoid running both extensions.
 
 ## License
 
