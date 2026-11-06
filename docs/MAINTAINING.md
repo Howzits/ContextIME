@@ -53,6 +53,8 @@ CI 不替代真实输入法上屏测试。发布前仍需参考 [兼容性记录
 
 可先在 GitHub Actions 选择 **Publish Marketplace → Run workflow**，填入已有 Release 标签，并保持 `dry_run=true`，验证下载、Publisher、平台、源码和 SHA-256，不请求市场发布。演练成功不代表 OIDC 授权已经验证。
 
+演练也可使用尚未公开的 Release 草稿。GitHub 对草稿读取要求写入级仓库权限，因此该工作流的仓库令牌有 `contents: write`；流程本身不修改 Release，市场上传使用独立的 OIDC 凭据。
+
 正式启用后发布 Release 即会更新市场。若发布时授权配置不正确，修正后可手动运行工作流，选择相同标签、`dry_run=false` 重试；正式模式只接受公开的非预发布 Release。市场验证和搜索同步仍由 Marketplace 完成，不保证立即可见。
 
 参考：[微软 Trusted Publishing 说明](https://developer.microsoft.com/blog/trusted-publishing-visual-studio-marketplace/)。

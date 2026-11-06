@@ -28,7 +28,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 15
     permissions:
-      contents: read
+      contents: write # GitHub requires push access to read draft Releases during dry runs.
       id-token: write
     env:
       RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
