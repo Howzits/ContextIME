@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 internal sealed class Snapshot {
     internal IntPtr Window, Focus;
-    internal string Identity, Mode;
+    internal string Identity, Mode, Reason;
 }
 
 internal static class Rules {

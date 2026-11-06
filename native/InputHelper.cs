@@ -4,12 +4,18 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 using System.Windows.Automation;
 
 internal static class Program {
     static volatile bool running = true;
     static bool otherInputsChinese = true;
     static int pollInterval = 250;
+    static bool remember = true;
+    static readonly Preferences preferences = new Preferences();
+    sealed class Command { internal string Text; internal Action<string> Reply; }
+    static readonly ConcurrentQueue<Command> commands = new ConcurrentQueue<Command>();
+    static volatile bool primary;
     // Use control types and structural IDs/classes, independent of chat provider.
     // Typed text, values and document contents are never read or logged.
     internal static Snapshot ReadFocus() {
@@ -46,20 +52,21 @@ internal static class Program {
             if (depth == 0) terminalName = Regex.IsMatch(current.Name ?? "", @"^(Terminal input|终端输入|终端输入框)$", RegexOptions.IgnoreCase);
             element = TreeWalker.ControlViewWalker.GetParent(element);
         }
-        return new Snapshot { Window = window, Focus = Native.Focus(window), Identity = identity,
-            Mode = password ? null : Rules.Decide(process, metadata, editable, terminalName, codeEditor, otherInputsChinese) };
+        string mode = password ? null : Rules.Decide(process, metadata, editable, terminalName, codeEditor, otherInputsChinese);
+        string reason = password ? "password" : mode == "en" ? "terminal" : mode == "zh" ? "editable-input" : codeEditor ? "code-editor" : !editable ? "readonly-or-noneditable" : "scope-preserve";
+        return new Snapshot { Window = window, Focus = Native.Focus(window), Identity = identity, Mode = mode, Reason = reason };
     }
     static bool StillFocused(Snapshot s) {
         if (Native.GetForegroundWindow() != s.Window || Native.Focus(s.Window) != s.Focus) return false;
         var fresh = ReadFocus();
         return fresh != null && fresh.Identity == s.Identity && fresh.Mode == s.Mode;
     }
-    static void Apply(Snapshot s) {
+    static void Apply(Snapshot s, string target) {
         if (s.Focus == IntPtr.Zero || !StillFocused(s)) return;
-        IntPtr layout = Layouts.Resolve(s.Mode, s.Window);
-        if (layout == IntPtr.Zero) { Console.WriteLine("No configured input method available for: " + s.Mode + " (keeping current input method)"); return; }
+        IntPtr layout = Layouts.Resolve(target, s.Window);
+        if (layout == IntPtr.Zero) { Console.WriteLine("No configured input method available for: " + target + " (keeping current input method)"); return; }
         bool posted = Native.PostMessage(s.Focus, 0x0050, IntPtr.Zero, layout);
-        Console.WriteLine(DateTime.Now.ToString("HH:mm:ss") + " target=" + s.Mode + " layoutRequest=" + posted);
+        Console.WriteLine(DateTime.Now.ToString("HH:mm:ss") + " target=" + target + " layoutRequest=" + posted);
         Thread.Sleep(150);
         if (!running || !StillFocused(s)) return;
         IntPtr ime = Native.ImmGetDefaultIMEWnd(s.Focus);
@@ -69,13 +76,36 @@ internal static class Program {
         IntPtr read = Native.SendMessageTimeout(ime, 0x0283, new IntPtr(1), IntPtr.Zero, 2, 100, out result);
         if (read != IntPtr.Zero) {
             long flags = (long)(result.ToUInt64() & 0xffffffff);
-            flags = s.Mode == "zh" ? flags | 1 : flags & ~1L;
+            flags = target == "zh" ? flags | 1 : flags & ~1L;
             Native.SendMessageTimeout(ime, 0x0283, new IntPtr(2), new IntPtr(flags), 2, 100, out result);
         }
-        Native.SendMessageTimeout(ime, 0x0283, new IntPtr(6), new IntPtr(s.Mode == "zh" ? 1 : 0), 2, 100, out result);
+        Native.SendMessageTimeout(ime, 0x0283, new IntPtr(6), new IntPtr(target == "zh" ? 1 : 0), 2, 100, out result);
+    }
+    static string Observe(Snapshot s) {
+        if (s.Focus == IntPtr.Zero || !StillFocused(s)) return null;
+        uint pid;
+        string language = Layouts.Language(Native.GetKeyboardLayout(Native.GetWindowThreadProcessId(s.Focus, out pid)));
+        if (language == "en") return "en";
+        if (language != "zh") return null;
+        IntPtr ime = Native.ImmGetDefaultIMEWnd(s.Focus);
+        if (ime == IntPtr.Zero) return null;
+        UIntPtr open, flags;
+        if (Native.SendMessageTimeout(ime, 0x0283, new IntPtr(5), IntPtr.Zero, 2, 80, out open) == IntPtr.Zero) return null;
+        if (open.ToUInt64() == 0) return "en";
+        if (Native.SendMessageTimeout(ime, 0x0283, new IntPtr(1), IntPtr.Zero, 2, 80, out flags) == IntPtr.Zero) return null;
+        return (flags.ToUInt64() & 1) != 0 ? "zh" : "en";
+    }
+    static string Diagnose(Snapshot s) {
+        return "diagnostic reason=" + (s == null ? "outside-vscode-or-no-accessible-focus" : s.Reason) +
+            " default=" + (s == null ? "keep" : s.Mode ?? "keep") +
+            " preference=" + (s == null || s.Mode != "zh" || !remember ? "none" : preferences.Get(s.Identity, "none")) +
+            " observed=" + (s == null || s.Mode == null ? "unknown" : Observe(s) ?? "unknown") +
+            " remember=" + remember + " interval=" + pollInterval;
     }
     static int SelfTest() {
         Layouts.SelfTest();
+        Preferences.SelfTest();
+        CommandBus.SelfTest();
         if (Rules.Decide("Code", "xterm-helper-textarea", true, false) != "en" ||
             Rules.Decide("Code", "search", true, false, false, false) != null ||
             Rules.Decide("Code", "chat-input", true, false, true, false) != "zh" ||
@@ -96,6 +126,7 @@ internal static class Program {
         Console.OutputEncoding = Encoding.UTF8;
         foreach (string arg in args) {
             if (arg == "--other-inputs=preserve") otherInputsChinese = false;
+            if (arg == "--remember=false") remember = false;
             if (arg.StartsWith("--poll=")) {
                 int parsed;
                 if (Int32.TryParse(arg.Substring(7), out parsed)) pollInterval = Math.Max(150, Math.Min(1000, parsed));
@@ -111,30 +142,85 @@ internal static class Program {
         }
         if (args.Length > 0 && args[0] == "--probe") {
             var s = ReadFocus();
-            Console.WriteLine(s == null ? "No supported VS Code focus" : "VS Code focus: " + (s.Mode ?? "unmatched"));
+            Console.WriteLine(Diagnose(s));
             return 0;
         }
         // Parent closes stdin on extension disposal or crash; helper exits with it.
-        Task.Run(delegate { try { while (Console.Read() != -1) {} } catch {} running = false; });
+        Task.Run(delegate {
+            try {
+                string line;
+                while ((line = Console.ReadLine()) != null) {
+                    if (primary) commands.Enqueue(new Command { Text = line, Reply = Console.WriteLine });
+                    else Console.WriteLine(CommandBus.Send(line));
+                }
+            } catch {} running = false;
+        });
         bool owns = false;
         using (var mutex = new Mutex(false, "Local\\VSCode.AutoInput.Helper")) {
             string last = null;
+            string baseline = null;
+            DateTime observeAfter = DateTime.MinValue;
+            string pendingCommand = null;
+            Action<string> reply = Console.WriteLine;
+            DateTime commandAt = DateTime.MaxValue;
             DateTime lastError = DateTime.MinValue;
             try {
                 while (running) {
                     // Multiple VS Code windows share one active worker; others can take over.
-                    if (!owns) { try { owns = mutex.WaitOne(0); } catch (AbandonedMutexException) { owns = true; } }
+                    if (!owns) {
+                        try { owns = mutex.WaitOne(0); } catch (AbandonedMutexException) { owns = true; }
+                        if (owns) { primary = true; CommandBus.Listen(delegate(string command, Action<string> respond) { commands.Enqueue(new Command { Text = command, Reply = respond }); }); }
+                    }
                     if (owns) {
                         try {
+                            Command command;
+                            while (commands.TryDequeue(out command)) {
+                                if (command.Text == "clear") {
+                                    if (pendingCommand != null) { reply("command=superseded"); pendingCommand = null; }
+                                    preferences.Clear(); baseline = null; last = null; command.Reply("preferences=cleared");
+                                }
+                                else if (command.Text == "diagnose" || command.Text == "pin-en" || command.Text == "pin-zh" || command.Text == "pin-keep") {
+                                    if (pendingCommand != null) reply("command=superseded");
+                                    pendingCommand = command.Text; reply = command.Reply; commandAt = DateTime.UtcNow.AddSeconds(3);
+                                } else command.Reply("command=unsupported");
+                            }
                             var s = ReadFocus();
+                            if (pendingCommand != null && DateTime.UtcNow >= commandAt) {
+                                if (pendingCommand == "diagnose") reply(Diagnose(s));
+                                else if (!remember) reply("preference=skipped reason=memory-disabled");
+                                else if (s != null && s.Mode == "zh" && StillFocused(s)) {
+                                    string mode = pendingCommand.Substring(4);
+                                    preferences.Set(s.Identity, mode);
+                                    reply("preference=" + mode + " source=command");
+                                    if (mode != "keep") Apply(s, mode);
+                                    last = s.Identity; observeAfter = DateTime.UtcNow.AddMilliseconds(700); baseline = null;
+                                } else reply("preference=skipped reason=not-an-eligible-input");
+                                pendingCommand = null;
+                            }
                             if (s == null) { last = null; }
                             else if (s.Identity != last) {
                                 last = s.Identity;
-                                if (s.Mode != null) Apply(s);
+                                baseline = null;
+                                string target = remember && s.Mode == "zh" ? preferences.Get(s.Identity, s.Mode) : s.Mode;
+                                if (target != null && target != "keep") Apply(s, target);
                                 else Console.WriteLine("focus=preserve");
+                                observeAfter = DateTime.UtcNow.AddMilliseconds(700);
+                            } else if (remember && s.Mode == "zh" && DateTime.UtcNow >= observeAfter && preferences.Get(s.Identity, "") != "keep") {
+                                string observed = Observe(s);
+                                if (observed != null) {
+                                    if (baseline != null && baseline != observed) {
+                                        preferences.Set(s.Identity, observed);
+                                        Console.WriteLine("preference=" + observed + " source=observed-change");
+                                    }
+                                    baseline = observed;
+                                }
                             }
                         } catch (Exception error) {
                             last = null;
+                            if (pendingCommand != null && DateTime.UtcNow >= commandAt) {
+                                reply("diagnostic reason=focus-query-error error=" + error.GetType().Name);
+                                pendingCommand = null;
+                            }
                             if ((DateTime.UtcNow - lastError).TotalSeconds > 10) {
                                 Console.WriteLine("Focus query unavailable: " + error.GetType().Name);
                                 lastError = DateTime.UtcNow;

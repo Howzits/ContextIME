@@ -24,7 +24,7 @@ ContextIME 关注界面间的输入焦点，不分析代码语法、注释或字
 
 ## 开始使用
 
-**[下载已编译插件 ContextIME v0.3.0（VSIX）](https://github.com/Howzits/ContextIME/raw/refs/heads/main/dist/ContextIME-0.3.0.vsix)**，无需自行编译。
+**[下载已编译插件 ContextIME v0.4.0（VSIX）](https://github.com/Howzits/ContextIME/raw/refs/heads/main/dist/ContextIME-0.4.0.vsix)**，无需自行编译。
 
 1. 在 Windows 配置可用的中文输入法。
 2. 从 VS Code 扩展页 `… → 从 VSIX 安装…` 安装本地包，必要时运行 `Developer: Reload Window`。
@@ -51,12 +51,34 @@ ContextIME 关注界面间的输入焦点，不分析代码语法、注释或字
 - `ContextIME: 暂停 / 启用自动输入法`
 - `ContextIME: 查看运行日志`
 - `ContextIME: 重启输入法助手`
+- `ContextIME: 诊断输入框（3 秒后采集）`
+- `ContextIME: 此输入框记住英文 / 中文 / 保持不变（3 秒后采集）`
+- `ContextIME: 清除本次会话的输入框偏好`
+
+### 输入框偏好记忆
+
+在聊天或普通输入框手动切换中英文后，如果 Windows 接口能观察到状态变化，ContextIME 会记住该控件的偏好；离开再返回时优先恢复。不会把一次布局请求直接当作用户偏好，也不会在同一控件中不断强制切换。
+
+输入法的状态读取不总是可靠，尤其是 TSF 模式。可使用“此输入框记住英文 / 中文 / 保持不变”命令，然后在 **3 秒内点击目标输入框**，显式指定偏好。终端仍默认英文；代码区、密码框和只读控件不接受偏好操作。
+
+偏好仅保存在当前助手会话内，最多 128 个控件；不会写入磁盘或记录聊天内容。控件重建、重载窗口、修改设置或助手重启后可能失效或清空。新版本安装后建议重载所有 VS Code 窗口，避免旧助手占用共享控制通道。
+
+### 输入框诊断
+
+运行诊断命令后，在 **3 秒内点击目标输入框**，结果会显示在 ContextIME 输出面板：
+
+```text
+diagnostic reason=editable-input default=zh preference=en observed=en remember=True interval=250
+```
+
+`reason` 表示规则依据：`terminal`（终端）、`editable-input`（输入框）、`code-editor`（代码区）、`password`（密码框）、`readonly-or-noneditable`（只读或非输入控件）、`scope-preserve`（按范围保持）或无法获取可访问焦点。`default` 为规则目标，`preference` 为会话偏好；`observed` 仅是传统 Windows IME 接口的参考值，不保证是实际 TSF 状态。诊断不输出控件文字、窗口标题、代码或聊天内容。
 
 ## 设置
 
 | 设置 | 默认值 | 说明 |
 | --- | --- | --- |
 | `autoInput.enabled` | `true` | 启用自动切换；关闭后停止助手 |
+| `autoInput.rememberPreferences` | `true` | 记住当前会话的输入框偏好；关闭后始终按默认规则 |
 | `autoInput.otherInputs` | `chinese` | 其他可编辑输入框也请求中文；设为 `preserve` 可减少对搜索、命令面板等区域的干预 |
 | `autoInput.pollInterval` | `250` | 焦点检查间隔，150–1000 ms；实际切换延迟受控件与输入法影响 |
 
@@ -85,12 +107,14 @@ ContextIME 关注界面间的输入焦点，不分析代码语法、注释或字
 ## 没有自动切换？
 
 1. 确认状态栏未暂停，聚焦目标输入框后稍等再试打。
-2. 运行 `ContextIME: 查看运行日志`，区分未识别控件、缺少输入法与请求失败。
+2. 运行 `ContextIME: 诊断输入框（3 秒后采集）`，返回目标控件后查看规则原因；日志可进一步区分缺少输入法与请求失败。
 3. 没有识别到控件时，可手动尝试把 `editor.accessibilitySupport` 设为 `on` 后重载窗口。这会启用 VS Code 辅助功能行为，扩展不会替你修改。
 4. 已发出请求但没有中文上屏，先手动切换确认输入法本身正常；可能需要进一步适配该输入法。
 5. 助手停止时运行重启命令。异常退出最多自动重试两次，暂停或禁用会取消重试。
 
 同时启用操作同一区域的其他输入法工具可能互相覆盖。反馈时提供 Windows、VS Code、输入法版本、触发区域和日志即可，不需要聊天正文。
+
+具体检查项目和待实测场景见 [兼容性验证记录](docs/COMPATIBILITY.md)。自动测试通过不能替代真实界面上屏测试。
 
 ## 隐私与实现
 
@@ -112,6 +136,8 @@ ContextIME 通过 Windows UI Automation 查询焦点控件的类型、可写状�
 | `native/InputHelper.cs` | 焦点采集、切换请求与轮询 |
 | `native/InputPolicy.cs` | 终端、聊天及普通输入框判断规则 |
 | `native/LayoutSelector.cs` | 默认及已安装输入法选择 |
+| `native/Preferences.cs` | 有上限的会话偏好缓存 |
+| `native/CommandBus.cs` | 多窗口命令路由与结果回复 |
 | `native/NativeMethods.cs` | Windows 接口声明 |
 | `test/extension.test.js` | 暂停、配置更新、状态消息和异常重试测试 |
 

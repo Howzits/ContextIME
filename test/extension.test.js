@@ -12,11 +12,11 @@ function harness(initial = {}) {
   const commands = new Map();
   const timers = new Map();
   const status = { show() {}, dispose() {} };
-  const output = { lines: [], appendLine(s) { this.lines.push(s); }, append(s) { this.lines.push(s); }, dispose() {} };
+  const output = { lines: [], appendLine(s) { this.lines.push(s); }, append(s) { this.lines.push(s); }, show() { this.shown = true; }, dispose() {} };
   let changed;
   const vscode = {
     StatusBarAlignment: { Right: 1 }, ConfigurationTarget: { Global: 1 },
-    window: { createOutputChannel: () => output, createStatusBarItem: () => status },
+    window: { createOutputChannel: () => output, createStatusBarItem: () => status, setStatusBarMessage() {} },
     workspace: {
       getConfiguration: () => ({ get: (key, fallback) => settings[key] ?? fallback, update: async (key, value) => {
         settings[key] = value; changed({ affectsConfiguration: () => true });
@@ -29,6 +29,9 @@ function harness(initial = {}) {
     const worker = new EventEmitter();
     worker.stdout = new EventEmitter(); worker.stderr = new EventEmitter(); worker.stdin = new EventEmitter();
     worker.stdin.end = () => { worker.ended = true; };
+    worker.stdin.writable = true;
+    worker.messages = [];
+    worker.stdin.write = text => worker.messages.push(text);
     worker.kill = () => { worker.killed = true; };
     worker.args = args;
     children.push(worker);
@@ -52,7 +55,7 @@ function harness(initial = {}) {
 
 test('settings reach the helper and configuration changes replace it', () => {
   const h = harness({ otherInputs: 'preserve', pollInterval: 400 });
-  assert.deepEqual(Array.from(h.children[0].args), ['--other-inputs=preserve', '--poll=400']);
+  assert.deepEqual(Array.from(h.children[0].args), ['--other-inputs=preserve', '--poll=400', '--remember=true']);
   h.change();
   assert.equal(h.children[0].killed, true);
   assert.equal(h.children[0].ended, true);
@@ -104,5 +107,32 @@ test('disabled extension does not start a helper', () => {
   const h = harness({ enabled: false });
   assert.equal(h.children.length, 0);
   assert.match(h.status.text, /已暂停/);
+  h.dispose();
+});
+
+test('diagnostic and preference commands use the helper control channel', () => {
+  const h = harness();
+  h.commands.get('autoInput.diagnose')();
+  h.commands.get('autoInput.preferEnglish')();
+  h.commands.get('autoInput.preferChinese')();
+  h.commands.get('autoInput.preferKeep')();
+  h.commands.get('autoInput.clearPreferences')();
+  assert.deepEqual(h.children[0].messages, ['diagnose\n', 'pin-en\n', 'pin-zh\n', 'pin-keep\n', 'clear\n']);
+  h.children[0].stdout.emit('data', Buffer.from('diagnostic reason=code-editor default=keep\n'));
+  assert.equal(h.output.shown, true);
+  h.dispose();
+});
+
+test('diagnostic command reports a paused worker instead of starting another', () => {
+  const h = harness({ enabled: false });
+  h.commands.get('autoInput.diagnose')();
+  assert.equal(h.children.length, 0);
+  assert.match(h.output.lines.join('\n'), /助手未运行/);
+  h.dispose();
+});
+
+test('preference memory can be disabled through configuration', () => {
+  const h = harness({ rememberPreferences: false });
+  assert.ok(h.children[0].args.includes('--remember=false'));
   h.dispose();
 });

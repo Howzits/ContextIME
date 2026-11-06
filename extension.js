@@ -41,7 +41,8 @@ function activate(context) {
     }
     const args = [
       `--other-inputs=${config().get('otherInputs', 'chinese') === 'preserve' ? 'preserve' : 'chinese'}`,
-      `--poll=${config().get('pollInterval', 250)}`
+      `--poll=${config().get('pollInterval', 250)}`,
+      `--remember=${config().get('rememberPreferences', true)}`
     ];
     const worker = spawn(context.asAbsolutePath('bin/InputHelper.exe'), args, {
       windowsHide: true, stdio: ['pipe', 'pipe', 'pipe']
@@ -64,6 +65,12 @@ function activate(context) {
             : '$(warning) ContextIME: 请求失败';
         } else if (line.includes('focus=preserve')) status.text = '$(keyboard) ContextIME: 保持';
         else if (line.includes('No configured input method')) status.text = '$(warning) ContextIME: 缺少输入法';
+        else if (line.startsWith('diagnostic ')) output.show(true);
+        else if (/^preference=(en|zh|keep) source=command/.test(line)) {
+          vscode.window.setStatusBarMessage('ContextIME：已记住此输入框偏好（仅本次会话）。', 4000);
+        } else if (line.startsWith('preferences=cleared')) {
+          vscode.window.setStatusBarMessage('ContextIME：已清除本次会话的输入框偏好。', 4000);
+        } else if (line.startsWith('preference=skipped') || line.startsWith('command=')) output.show(true);
       }
     });
     worker.stderr.on('data', data => output.append(data.toString()));
@@ -85,6 +92,15 @@ function activate(context) {
   }
 
   const shutdown = () => { disposed = true; stop(); };
+  function send(command) {
+    if (!child || !child.stdin.writable) {
+      output.appendLine('助手未运行；请先启用 ContextIME 并重启助手。');
+      output.show(true);
+      return;
+    }
+    child.stdin.write(command + '\n');
+    if (command !== 'clear') vscode.window.setStatusBarMessage('ContextIME：请在 3 秒内点击目标输入框。', 3000);
+  }
   stopActive = shutdown;
   context.subscriptions.push(output, status,
     vscode.commands.registerCommand('autoInput.toggle', async () => {
@@ -92,6 +108,11 @@ function activate(context) {
     }),
     vscode.commands.registerCommand('autoInput.showLog', () => output.show()),
     vscode.commands.registerCommand('autoInput.restart', () => start()),
+    vscode.commands.registerCommand('autoInput.diagnose', () => send('diagnose')),
+    vscode.commands.registerCommand('autoInput.preferEnglish', () => send('pin-en')),
+    vscode.commands.registerCommand('autoInput.preferChinese', () => send('pin-zh')),
+    vscode.commands.registerCommand('autoInput.preferKeep', () => send('pin-keep')),
+    vscode.commands.registerCommand('autoInput.clearPreferences', () => send('clear')),
     vscode.workspace.onDidChangeConfiguration(event => {
       if (event.affectsConfiguration('autoInput')) start();
     }),
