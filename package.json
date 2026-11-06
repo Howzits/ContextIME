@@ -3,7 +3,7 @@
   "displayName": "ContextIME",
   "description": "聊天中文，终端英文。面向 AI 编程工作流，随输入焦点自动切换，沿用 Windows 默认输入法。",
   "version": "0.4.1",
-  "publisher": "local-tools",
+  "publisher": "ContextIME",
   "license": "MIT",
   "icon": "assets/contextime-logo.png",
   "repository": { "type": "git", "url": "https://github.com/Howzits/ContextIME.git" },
