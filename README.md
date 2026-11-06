@@ -28,7 +28,11 @@
   &nbsp;·&nbsp;
   <a href="https://github.com/Howzits/ContextIME/issues">反馈问题</a>
   &nbsp;·&nbsp;
-  <a href="#english">English</a>
+  <a href="README.en.md">English</a>
+</p>
+
+<p align="center">
+  <strong>简体中文</strong> / <a href="README.en.md">English</a>
 </p>
 
 ---
@@ -122,17 +126,7 @@ code --install-extension ContextIME.codex-terminal-auto-input
 
 ## English
 
-**Chinese for chat. English for the terminal. Fewer input-method interruptions.**
-
-ContextIME requests IME changes as you move between chat inputs and the integrated terminal in Windows VS Code. It uses configured Windows input methods, supports session-scoped input preferences, and leaves code editors and password fields unchanged. Accessibility and IME support vary; a requested state is not a verified input state.
-
-[Install from the Marketplace](https://marketplace.visualstudio.com/items?itemName=ContextIME.codex-terminal-auto-input) · [Compatibility](docs/COMPATIBILITY.md)
-
-```powershell
-code --install-extension ContextIME.codex-terminal-auto-input
-```
-
-If you used the earlier local build, uninstall `local-tools.codex-terminal-auto-input` before installing the Marketplace edition to avoid running both extensions.
+[Read the complete English README →](README.en.md)
 
 ## License
 
