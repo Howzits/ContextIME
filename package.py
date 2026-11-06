@@ -38,7 +38,8 @@ content_types = '''<?xml version="1.0" encoding="utf-8"?>
 <Default Extension="txt" ContentType="text/plain" />
 <Override PartName="/extension/LICENSE" ContentType="text/plain" />
 </Types>'''
-destination = root / f"ContextIME-{package['version']}.vsix"
+destination = root / 'dist' / f"ContextIME-{package['version']}.vsix"
+destination.parent.mkdir(exist_ok=True)
 with ZipFile(destination, 'w', ZIP_DEFLATED) as archive:
     archive.writestr('extension.vsixmanifest', manifest)
     archive.writestr('[Content_Types].xml', content_types)

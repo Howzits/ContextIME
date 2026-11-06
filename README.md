@@ -24,6 +24,8 @@ ContextIME 关注界面间的输入焦点，不分析代码语法、注释或字
 
 ## 开始使用
 
+**[下载已编译插件 ContextIME v0.3.0（VSIX）](https://github.com/Howzits/ContextIME/raw/refs/heads/main/dist/ContextIME-0.3.0.vsix)**，无需自行编译。
+
 1. 在 Windows 配置可用的中文输入法。
 2. 从 VS Code 扩展页 `… → 从 VSIX 安装…` 安装本地包，必要时运行 `Developer: Reload Window`。
 3. 点击集成终端，等待焦点检查后输入英文命令。
@@ -102,7 +104,7 @@ ContextIME 通过 Windows UI Automation 查询焦点控件的类型、可写状�
 ./build.ps1
 ```
 
-需要 Windows .NET Framework 4.x 编译器和 Python 3，无 npm 运行时依赖。构建原生助手、执行规则自检并生成本地 VSIX。使用 Node.js 可运行 `node --test test/extension.test.js` 检查扩展生命周期。
+需要 Windows .NET Framework 4.x 编译器和 Python 3，无 npm 运行时依赖。构建原生助手、执行规则自检并在 `dist/` 生成 VSIX。仓库保留该目录中的已编译安装包。使用 Node.js 可运行 `node --test test/extension.test.js` 检查扩展生命周期。
 
 | 文件 | 职责 |
 | --- | --- |

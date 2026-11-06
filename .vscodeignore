@@ -4,5 +4,6 @@ test/**
 *.ps1
 *.py
 *.vsix
+dist/**
 .gitignore
 .vscodeignore

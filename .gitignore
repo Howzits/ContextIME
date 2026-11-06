@@ -1,6 +1,7 @@
 .validation/
 bin/
 *.vsix
+!dist/*.vsix
 node_modules/
 __pycache__/
 *.pyc
