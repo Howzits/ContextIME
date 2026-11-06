@@ -8,7 +8,7 @@ function activate(context) {
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 10);
   status.name = 'ContextIME';
   status.command = 'autoInput.toggle';
-  status.tooltip = 'ContextIME：终端英文 · 对话中文。点击暂停/启用。目标语言不代表已确认实际输入状态。';
+  status.tooltip = vscode.l10n.t("ContextIME: English for terminals, Chinese for chat. Click to pause/enable. The target does not confirm the actual input state.");
   let child;
   let retry;
   let retries = 0;
@@ -32,11 +32,11 @@ function activate(context) {
     if (resetRetries) retries = 0;
     status.show();
     if (process.platform !== 'win32') {
-      status.text = '$(info) ContextIME: Windows only';
+      status.text = vscode.l10n.t("$(info) ContextIME: Windows only");
       return;
     }
     if (!config().get('enabled', true)) {
-      status.text = '$(debug-pause) ContextIME: 已暂停';
+      status.text = vscode.l10n.t("$(debug-pause) ContextIME: Paused");
       return;
     }
     const args = [
@@ -48,8 +48,8 @@ function activate(context) {
       windowsHide: true, stdio: ['pipe', 'pipe', 'pipe']
     });
     child = worker;
-    status.text = '$(keyboard) ContextIME: 自动';
-    output.appendLine(`${new Date().toISOString()} 启动焦点助手 ${args.join(' ')}`);
+    status.text = vscode.l10n.t("$(keyboard) ContextIME: Auto");
+    output.appendLine(`${new Date().toISOString()} ${vscode.l10n.t('Starting focus helper: {0}', args.join(' '))}`);
     let buffer = '';
     worker.stdout.on('data', data => {
       if (child !== worker) return;
@@ -61,29 +61,29 @@ function activate(context) {
         const target = /target=(en|zh) layoutRequest=(True|False)/.exec(line);
         if (target) {
           status.text = target[2] === 'True'
-            ? `$(keyboard) ContextIME: 目标 ${target[1] === 'en' ? 'EN' : '中'}`
-            : '$(warning) ContextIME: 请求失败';
-        } else if (line.includes('focus=preserve')) status.text = '$(keyboard) ContextIME: 保持';
-        else if (line.includes('No configured input method')) status.text = '$(warning) ContextIME: 缺少输入法';
+            ? vscode.l10n.t('$(keyboard) ContextIME: Target {0}', target[1] === 'en' ? 'EN' : vscode.l10n.t('ZH'))
+            : vscode.l10n.t("$(warning) ContextIME: Request failed");
+        } else if (line.includes('focus=preserve')) status.text = vscode.l10n.t("$(keyboard) ContextIME: Preserved");
+        else if (line.includes('No configured input method')) status.text = vscode.l10n.t("$(warning) ContextIME: Missing input method");
         else if (line.startsWith('diagnostic ')) output.show(true);
         else if (/^preference=(en|zh|keep) source=command/.test(line)) {
-          vscode.window.setStatusBarMessage('ContextIME：已记住此输入框偏好（仅本次会话）。', 4000);
+          vscode.window.setStatusBarMessage(vscode.l10n.t("ContextIME: Input preference saved for this session."), 4000);
         } else if (line.startsWith('preferences=cleared')) {
-          vscode.window.setStatusBarMessage('ContextIME：已清除本次会话的输入框偏好。', 4000);
+          vscode.window.setStatusBarMessage(vscode.l10n.t("ContextIME: Input preferences cleared for this session."), 4000);
         } else if (line.startsWith('preference=skipped') || line.startsWith('command=')) output.show(true);
       }
     });
     worker.stderr.on('data', data => output.append(data.toString()));
     worker.stdin.on('error', () => {});
     worker.on('error', error => {
-      output.appendLine(`助手启动失败：${error.message}`);
-      if (child === worker) status.text = '$(warning) ContextIME: 启动失败';
+      output.appendLine(vscode.l10n.t('Helper startup failed: {0}', error.message));
+      if (child === worker) status.text = vscode.l10n.t("$(warning) ContextIME: Startup failed");
     });
     worker.on('exit', code => {
       if (child !== worker) return;
       child = undefined;
-      status.text = '$(warning) ContextIME: 助手已停止';
-      output.appendLine(`助手退出 (${code})`);
+      status.text = vscode.l10n.t("$(warning) ContextIME: Helper stopped");
+      output.appendLine(vscode.l10n.t('Helper exited ({0})', code));
       if (!disposed && config().get('enabled', true) && retries < 2) {
         retries += 1;
         retry = setTimeout(() => start(false), 1000 * retries);
@@ -94,12 +94,12 @@ function activate(context) {
   const shutdown = () => { disposed = true; stop(); };
   function send(command) {
     if (!child || !child.stdin.writable) {
-      output.appendLine('助手未运行；请先启用 ContextIME 并重启助手。');
+      output.appendLine(vscode.l10n.t("The helper is not running. Enable ContextIME and restart the helper."));
       output.show(true);
       return;
     }
     child.stdin.write(command + '\n');
-    if (command !== 'clear') vscode.window.setStatusBarMessage('ContextIME：请在 3 秒内点击目标输入框。', 3000);
+    if (command !== 'clear') vscode.window.setStatusBarMessage(vscode.l10n.t("ContextIME: Click the target input within 3 seconds."), 3000);
   }
   stopActive = shutdown;
   context.subscriptions.push(output, status,

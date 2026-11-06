@@ -32,7 +32,8 @@ def verify(path, expected, source_root=ROOT, compare_helper=True):
         asset_icons = manifest.findall("v:Assets/v:Asset", NS)
         if not any(a.get("Type") == "Microsoft.VisualStudio.Services.Icons.Default" and a.get("Path") == icon_path for a in asset_icons):
             raise ValueError("Missing VSIX icon asset")
-        for member in ("extension.js", "bin/InputHelper.exe", package["icon"], "README.en.md", "docs/USAGE.md", "docs/COMPATIBILITY.md"):
+        localized = ("package.nls.json", "package.nls.zh.json", "package.nls.zh-cn.json", "l10n/bundle.l10n.zh.json", "l10n/bundle.l10n.zh-cn.json") if expected.get("l10n") else ()
+        for member in localized + ("extension.js", "bin/InputHelper.exe", package["icon"], "README.en.md", "docs/USAGE.md", "docs/COMPATIBILITY.md"):
             packaged = archive.read("extension/" + member)
             if member == "bin/InputHelper.exe" and not compare_helper:
                 if not packaged.startswith(b"MZ"):

@@ -52,6 +52,8 @@ code --install-extension ContextIME.codex-terminal-auto-input
 
 安装后默认启用。切换到聊天框或终端试打，点击状态栏可暂停。
 
+界面跟随 VS Code 显示语言：中文显示中文，其他语言默认英文，无需额外配置。
+
 ## 常用设置
 
 | 设置 | 默认值 | 用途 |

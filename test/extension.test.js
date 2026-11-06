@@ -6,7 +6,7 @@ const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 const vm = require('node:vm');
 
-function harness(initial = {}) {
+function harness(initial = {}, language = 'zh-cn') {
   const settings = { enabled: true, otherInputs: 'chinese', pollInterval: 250, ...initial };
   const children = [];
   const commands = new Map();
@@ -14,9 +14,13 @@ function harness(initial = {}) {
   const status = { show() {}, dispose() {} };
   const output = { lines: [], appendLine(s) { this.lines.push(s); }, append(s) { this.lines.push(s); }, show() { this.shown = true; }, dispose() {} };
   let changed;
+  const translations = language.toLowerCase().startsWith('zh')
+    ? JSON.parse(readFileSync(join(__dirname, '..', 'l10n', 'bundle.l10n.zh-cn.json'), 'utf8')) : {};
+  const messages = [];
   const vscode = {
+    l10n: { t: (message, ...args) => (translations[message] || message).replace(/\{(\d+)\}/g, (_, n) => String(args[n])) },
     StatusBarAlignment: { Right: 1 }, ConfigurationTarget: { Global: 1 },
-    window: { createOutputChannel: () => output, createStatusBarItem: () => status, setStatusBarMessage() {} },
+    window: { createOutputChannel: () => output, createStatusBarItem: () => status, setStatusBarMessage(message) { messages.push(message); } },
     workspace: {
       getConfiguration: () => ({ get: (key, fallback) => settings[key] ?? fallback, update: async (key, value) => {
         settings[key] = value; changed({ affectsConfiguration: () => true });
@@ -46,7 +50,7 @@ function harness(initial = {}) {
   vm.runInNewContext(readFileSync(join(__dirname, '..', 'extension.js'), 'utf8'), sandbox);
   const context = { subscriptions: [], asAbsolutePath: name => join(__dirname, '..', name) };
   sandbox.module.exports.activate(context);
-  return { settings, children, commands, timers, status, output,
+  return { settings, children, commands, timers, status, output, messages,
     change() { changed({ affectsConfiguration: () => true }); },
     dispose() { sandbox.module.exports.deactivate(); },
     runRetry() { const [id, fn] = timers.entries().next().value; timers.delete(id); fn(); }
@@ -135,4 +139,41 @@ test('preference memory can be disabled through configuration', () => {
   const h = harness({ rememberPreferences: false });
   assert.ok(h.children[0].args.includes('--remember=false'));
   h.dispose();
+});
+
+for (const language of ['en', 'fr', 'zh-cn', 'zh-tw']) {
+  test(`UI follows VS Code display language (${language})`, async () => {
+    const h = harness({}, language);
+    const chinese = language.startsWith('zh');
+    assert.match(h.status.text, chinese ? /自动/ : /Auto/);
+    assert.match(h.status.tooltip, chinese ? /终端英文/ : /English for terminals/);
+    h.children[0].stdout.emit('data', Buffer.from('target=en layoutRequest=True\n'));
+    assert.match(h.status.text, chinese ? /目标 EN/ : /Target EN/);
+    h.commands.get('autoInput.diagnose')();
+    assert.match(h.messages.at(-1), chinese ? /3 秒/ : /3 seconds/);
+    h.children[0].stdout.emit('data', Buffer.from('preferences=cleared\n'));
+    assert.match(h.messages.at(-1), chinese ? /已清除/ : /cleared/);
+    await h.commands.get('autoInput.toggle')();
+    assert.match(h.status.text, chinese ? /已暂停/ : /Paused/);
+    h.dispose();
+  });
+}
+
+test('all manifest translations resolve and runtime bundles cover every message', () => {
+  const root = join(__dirname, '..');
+  const metadata = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+  const english = JSON.parse(readFileSync(join(root, 'package.nls.json'), 'utf8'));
+  const chinese = JSON.parse(readFileSync(join(root, 'package.nls.zh-cn.json'), 'utf8'));
+  const keys = JSON.stringify(metadata).match(/%([^%]+)%/g);
+  for (const placeholder of keys) {
+    const key = placeholder.slice(1, -1);
+    assert.ok(english[key], key);
+    assert.ok(chinese[key], key);
+  }
+  const source = readFileSync(join(root, 'extension.js'), 'utf8');
+  const bundle = JSON.parse(readFileSync(join(root, 'l10n', 'bundle.l10n.zh-cn.json'), 'utf8'));
+  for (const match of source.matchAll(/vscode\.l10n\.t\((['"])(.*?)\1/g)) {
+    assert.ok(bundle[match[2]], match[2]);
+    assert.deepEqual(bundle[match[2]].match(/\{\d+\}/g), match[2].match(/\{\d+\}/g));
+  }
 });

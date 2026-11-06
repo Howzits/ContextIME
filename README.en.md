@@ -52,6 +52,8 @@ code --install-extension ContextIME.codex-terminal-auto-input
 
 Enabled by default. Try typing in a chat input and the terminal; click the status bar item to pause.
 
+The interface follows the VS Code display language: Chinese for Chinese locales, English otherwise. No extra configuration is needed.
+
 ## Settings
 
 | Setting | Default | Purpose |
