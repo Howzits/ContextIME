@@ -6,7 +6,7 @@
 
 为 **Windows 上的 VS Code 用户**设计，适合经常在 AI 聊天和集成终端之间往返的开发者。
 
-**[下载 ContextIME v0.4.0](https://github.com/Howzits/ContextIME/raw/refs/heads/main/dist/ContextIME-0.4.0.vsix)** · [安装与使用](#安装与使用) · [配置指南](docs/USAGE.md) · [反馈问题](https://github.com/Howzits/ContextIME/issues)
+**[下载 ContextIME v0.4.0](https://github.com/Howzits/ContextIME/releases/download/v0.4.0/ContextIME-0.4.0.vsix)** · [安装与使用](#安装与使用) · [配置指南](docs/USAGE.md) · [反馈问题](https://github.com/Howzits/ContextIME/issues)
 
 ## 从描述需求到执行命令，衔接更顺手
 
@@ -36,7 +36,7 @@ ContextIME 把输入法切换放在焦点变化时处理。典型使用流程是
 
 需要 **Windows x64、VS Code 1.96+ 或 VS Code Insiders**，以及已配置的中文输入法。
 
-1. [下载已编译的 VSIX 安装包](https://github.com/Howzits/ContextIME/raw/refs/heads/main/dist/ContextIME-0.4.0.vsix)，无需自行编译。
+1. [下载已编译的 VSIX 安装包](https://github.com/Howzits/ContextIME/releases/download/v0.4.0/ContextIME-0.4.0.vsix)，无需自行编译。
 2. 打开 VS Code 扩展视图，点击右上角 `… → 从 VSIX 安装…`，选择下载的文件。
 3. 必要时运行 `Developer: Reload Window`；升级后建议重载所有 VS Code 窗口。
 4. 在聊天输入框和集成终端之间切换，分别试打中文和英文。
@@ -80,7 +80,7 @@ ContextIME 把输入法切换放在焦点变化时处理。典型使用流程是
 
 项目提供源码、编译脚本和[兼容性检查方法](docs/COMPATIBILITY.md)，也欢迎贡献适配和实测结果。
 
-[下载试用](https://github.com/Howzits/ContextIME/raw/refs/heads/main/dist/ContextIME-0.4.0.vsix) · [查看更新](CHANGELOG.md)
+[下载试用](https://github.com/Howzits/ContextIME/releases/download/v0.4.0/ContextIME-0.4.0.vsix) · [历史版本](https://github.com/Howzits/ContextIME/releases) · [查看更新](CHANGELOG.md)
 
 ## English
 
@@ -88,7 +88,7 @@ ContextIME 把输入法切换放在焦点变化时处理。典型使用流程是
 
 ContextIME requests IME changes as you move between chat inputs and the integrated terminal in Windows VS Code. It uses configured Windows input methods, supports session-scoped input preferences, and leaves code editors and password fields unchanged. Accessibility and IME support vary; a requested state is not a verified input state.
 
-[Download the VSIX](https://github.com/Howzits/ContextIME/raw/refs/heads/main/dist/ContextIME-0.4.0.vsix) · [Compatibility](docs/COMPATIBILITY.md)
+[Download the VSIX](https://github.com/Howzits/ContextIME/releases/download/v0.4.0/ContextIME-0.4.0.vsix) · [Compatibility](docs/COMPATIBILITY.md)
 
 ## License
 
