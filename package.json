@@ -2,7 +2,7 @@
   "name": "codex-terminal-auto-input",
   "displayName": "ContextIME",
   "description": "聊天中文，终端英文。面向 AI 编程工作流，随输入焦点自动切换，沿用 Windows 默认输入法。",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "publisher": "ContextIME",
   "license": "MIT",
   "icon": "assets/icon.png",
@@ -15,6 +15,12 @@
   "extensionKind": ["ui"],
   "activationEvents": ["onStartupFinished"],
   "main": "./extension.js",
+  "scripts": {
+    "test": "node --test test/extension.test.js",
+    "build": "pwsh -NoProfile -File build.ps1",
+    "verify-package": "python scripts/verify_package.py"
+  },
+  "devDependencies": { "@vscode/vsce": "4.1.0" },
   "capabilities": { "untrustedWorkspaces": { "supported": true }, "virtualWorkspaces": true },
   "contributes": {
     "commands": [

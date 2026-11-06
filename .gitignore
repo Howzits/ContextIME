@@ -1,7 +1,7 @@
 .validation/
 bin/
 *.vsix
-!dist/*.vsix
+dist/SHA256SUMS.txt
 node_modules/
 __pycache__/
 *.pyc

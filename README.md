@@ -67,7 +67,7 @@ code --install-extension ContextIME.codex-terminal-auto-input
 
 ## 文档与反馈
 
-[使用与故障排查](docs/USAGE.md) · [兼容性记录](docs/COMPATIBILITY.md) · [更新日志](CHANGELOG.md) · [反馈问题](https://github.com/Howzits/ContextIME/issues)
+[使用与故障排查](docs/USAGE.md) · [兼容性记录](docs/COMPATIBILITY.md) · [维护与发布](docs/MAINTAINING.md) · [更新日志](CHANGELOG.md) · [反馈问题](https://github.com/Howzits/ContextIME/issues/new/choose)
 
 不读取代码或聊天正文，不监听按键，不联网，不上传遥测。当前仅支持 Windows 桌面版 VS Code，不提供系统全局切换。
 

@@ -7,3 +7,6 @@ test/**
 dist/**
 .gitignore
 .vscodeignore
+.github/**
+scripts/**
+package-lock.json

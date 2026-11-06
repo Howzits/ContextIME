@@ -67,7 +67,7 @@ Preferences do not persist across helper sessions. Switching depends on control 
 
 ## Documentation and support
 
-[Usage and troubleshooting (中文)](docs/USAGE.md) · [Compatibility (中文)](docs/COMPATIBILITY.md) · [Changelog](CHANGELOG.md) · [Report an issue](https://github.com/Howzits/ContextIME/issues)
+[Usage and troubleshooting (中文)](docs/USAGE.md) · [Compatibility (中文)](docs/COMPATIBILITY.md) · [Maintenance and releases (中文)](docs/MAINTAINING.md) · [Changelog](CHANGELOG.md) · [Report an issue](https://github.com/Howzits/ContextIME/issues/new/choose)
 
 No code or chat content is read. No keystroke listening, network requests, or telemetry. Currently limited to desktop VS Code on Windows; no system-wide switching.
 

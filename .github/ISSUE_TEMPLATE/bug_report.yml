@@ -1,0 +1,54 @@
+name: 问题反馈 / Bug report
+description: 无法切换、切换错误、偏好或诊断异常 / Report a switching problem
+title: '[Bug] '
+body:
+  - type: markdown
+    attributes:
+      value: 请勿提交聊天正文、代码内容或个人信息。只需版本、复现步骤和诊断结果。 / Do not include private content.
+  - type: input
+    id: extension-version
+    attributes:
+      label: ContextIME 版本 / Extension version
+      placeholder: '例如 / e.g. 0.4.1'
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Windows 与 VS Code 版本 / Windows and VS Code versions
+      placeholder: Windows 11 x64; VS Code 1.xx
+    validations:
+      required: true
+  - type: input
+    id: input-method
+    attributes:
+      label: 输入法及版本 / Input method and version
+      placeholder: 微软拼音、微信输入法等 / Microsoft Pinyin, WeType, etc.
+    validations:
+      required: true
+  - type: input
+    id: target
+    attributes:
+      label: 发生问题的区域 / Affected input
+      description: 聊天插件名和版本，或终端、搜索框等。 / Chat extension/version, terminal, search box, etc.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 复现步骤、预期与实际结果 / Steps, expected and actual results
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: 诊断输出 / Diagnostics
+      description: 运行 ContextIME 诊断命令，3 秒内点击目标输入框。无法获取时请说明。 / Run diagnostics and focus the input within 3 seconds; explain if unavailable.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: settings
+    attributes:
+      label: 自定义设置与其他输入法工具 / Custom settings and other IME tools
+      description: 仅填写 autoInput 设置和其他自动切换扩展，不要粘贴完整个人配置。

@@ -1,0 +1,55 @@
+"""Validate the one official VSIX used by Marketplace and GitHub Releases."""
+import argparse
+import hashlib
+import json
+from pathlib import Path
+from zipfile import ZipFile
+import xml.etree.ElementTree as ET
+
+ROOT = Path(__file__).resolve().parent.parent
+NS = {"v": "http://schemas.microsoft.com/developer/vsx-schema/2011"}
+
+
+def verify(path, expected):
+    with ZipFile(path) as archive:
+        if archive.testzip():
+            raise ValueError("Corrupt ZIP member")
+        package = json.loads(archive.read("extension/package.json"))
+        for key in ("name", "publisher", "version"):
+            if package[key] != expected[key]:
+                raise ValueError(f"Package {key} differs from source")
+        if package["publisher"] != "ContextIME":
+            raise ValueError("Unexpected publisher; do not release a local-tools package")
+        manifest = ET.fromstring(archive.read("extension.vsixmanifest"))
+        identity = manifest.find("v:Metadata/v:Identity", NS)
+        for key, value in {"Id": package["name"], "Publisher": "ContextIME", "Version": package["version"], "TargetPlatform": "win32-x64"}.items():
+            if identity is None or identity.get(key) != value:
+                raise ValueError(f"Invalid manifest {key}")
+        icon_path = "extension/" + package["icon"]
+        icon = archive.read(icon_path)
+        if not icon.startswith(b"\x89PNG\r\n\x1a\n") or len(icon) > 1024 * 1024:
+            raise ValueError("Icon must be PNG and at most 1024 KB")
+        asset_icons = manifest.findall("v:Assets/v:Asset", NS)
+        if not any(a.get("Type") == "Microsoft.VisualStudio.Services.Icons.Default" and a.get("Path") == icon_path for a in asset_icons):
+            raise ValueError("Missing VSIX icon asset")
+        for member in ("extension.js", "bin/InputHelper.exe", package["icon"], "README.en.md", "docs/USAGE.md", "docs/COMPATIBILITY.md"):
+            if archive.read("extension/" + member) != (ROOT / member).read_bytes():
+                raise ValueError(f"Runtime file differs from source: {member}")
+        # vsce normalizes names and rewrites README links for the public repository.
+        archive.read("extension/readme.md")
+        if any(name.startswith(("extension/.validation/", "extension/node_modules/", "extension/.github/", "extension/dist/", "extension/native/")) for name in archive.namelist()):
+            raise ValueError("Build-only files leaked into VSIX")
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def main():
+    expected = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--vsix", type=Path, default=ROOT / "dist" / f"ContextIME-{expected['version']}-win32-x64.vsix")
+    args = parser.parse_args()
+    digest = verify(args.vsix, expected)
+    print(f"Verified ContextIME {expected['version']} / win32-x64; SHA-256 {digest}")
+
+
+if __name__ == "__main__":
+    main()

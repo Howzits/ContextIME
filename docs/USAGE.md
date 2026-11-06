@@ -20,7 +20,7 @@ code --install-extension ContextIME.codex-terminal-auto-input
 
 ### 离线安装
 
-从仓库下载 [ContextIME v0.4.1 市场发布包](https://github.com/Howzits/ContextIME/raw/refs/heads/main/dist/ContextIME-0.4.1-marketplace-win32-x64.vsix)，在扩展视图选择 `… → 从 VSIX 安装…`。
+从 [GitHub Releases](https://github.com/Howzits/ContextIME/releases) 下载正式 Publisher 为 `ContextIME` 的 Windows x64 安装包，在扩展视图选择 `… → 从 VSIX 安装…`。
 
 GitHub Releases 中早期的 `ContextIME-0.4.1.vsix` 使用 `local-tools` 发布者，与市场版是不同扩展 ID。迁移时请选市场版或上面的 `marketplace-win32-x64` 安装包。
 
@@ -116,10 +116,11 @@ ContextIME 通过 Windows UI Automation 查询焦点控件的类型、可写状�
 ## 开发
 
 ```powershell
-./build.ps1
+npm ci --ignore-scripts
+npm run build
 ```
 
-需要 Windows .NET Framework 4.x 编译器和 Python 3，无 npm 运行时依赖。构建原生助手、执行规则自检并在 `dist/` 生成 VSIX。仓库保留该目录中的已编译安装包。使用 Node.js 可运行 `node --test test/extension.test.js` 检查扩展生命周期。
+需要 Windows .NET Framework 4.x 编译器、Node.js 24、PowerShell 7 和 Python 3，无 npm 运行时依赖。统一入口运行编译、自检、测试和官方打包，在 `dist/` 输出 Windows x64 VSIX 与校验文件。详见 [维护与发布流程](MAINTAINING.md)。
 
 | 文件 | 职责 |
 | --- | --- |
