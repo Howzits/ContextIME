@@ -43,7 +43,7 @@ destination.parent.mkdir(exist_ok=True)
 with ZipFile(destination, 'w', ZIP_DEFLATED) as archive:
     archive.writestr('extension.vsixmanifest', manifest)
     archive.writestr('[Content_Types].xml', content_types)
-    for name in ['package.json', 'extension.js', 'README.md', 'CHANGELOG.md', 'LICENSE', 'bin/InputHelper.exe', 'docs/COMPATIBILITY.md']:
+    for name in ['package.json', 'extension.js', 'README.md', 'CHANGELOG.md', 'LICENSE', 'bin/InputHelper.exe', 'docs/COMPATIBILITY.md', 'docs/USAGE.md']:
         archive.write(root / name, 'extension/' + name)
 with ZipFile(destination) as archive:
     assert archive.testzip() is None
