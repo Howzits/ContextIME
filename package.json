@@ -2,7 +2,7 @@
   "name": "codex-terminal-auto-input",
   "displayName": "ContextIME",
   "description": "%description%",
-  "version": "0.4.3",
+  "version": "0.4.6",
   "publisher": "ContextIME",
   "license": "MIT",
   "icon": "assets/icon.png",
@@ -112,8 +112,8 @@
         },
         "autoInput.pollInterval": {
           "type": "integer",
-          "default": 250,
-          "minimum": 150,
+          "default": 100,
+          "minimum": 50,
           "maximum": 1000,
           "scope": "application",
           "description": "%autoInput.pollInterval.description%"

@@ -41,7 +41,7 @@ function activate(context) {
     }
     const args = [
       `--other-inputs=${config().get('otherInputs', 'chinese') === 'preserve' ? 'preserve' : 'chinese'}`,
-      `--poll=${config().get('pollInterval', 250)}`,
+      `--poll=${config().get('pollInterval', 100)}`,
       `--remember=${config().get('rememberPreferences', true)}`
     ];
     const worker = spawn(context.asAbsolutePath('bin/InputHelper.exe'), args, {

@@ -46,11 +46,19 @@ GitHub Releases 中早期的 `ContextIME-0.4.1.vsix` 使用 `local-tools` 发布
 - `ContextIME: 此输入框记住英文 / 中文 / 保持不变（3 秒后采集）`
 - `ContextIME: 清除本次会话的输入框偏好`
 
+### 切换防抖
+
+自动切换前，焦点需在同一输入框稳定至少 **80 ms**，并在执行时再次确认。快速经过其他输入框时，旧的待执行请求会被丢弃；进入代码区、密码框、只读区域或离开 VS Code 时取消待执行切换。
+
+同一控件稳定后只处理一次，不会持续强制恢复语言。显式偏好命令已等待 3 秒采集，不再额外防抖。防抖期间会在到期时提前检查焦点，其余时间沿用 `autoInput.pollInterval`；实际响应还受焦点采样、控件和输入法影响。
+
 ### 输入框偏好记忆
 
 在聊天或普通输入框手动切换中英文后，如果 Windows 接口能观察到状态变化，ContextIME 会记住该控件的偏好；离开再返回时优先恢复。不会把一次布局请求直接当作用户偏好，也不会在同一控件中不断强制切换。
 
-输入法的状态读取不总是可靠，尤其是 TSF 模式。可使用“此输入框记住英文 / 中文 / 保持不变”命令，然后在 **3 秒内点击目标输入框**，显式指定偏好。终端仍默认英文；代码区、密码框和只读控件不接受偏好操作。
+自动切换后会尽早读取参考状态。只有观察到目标模式，才建立基线；随后不同模式需连续观察至少 250 ms，并经过 700 ms 的自动切换稳定期，才记为偏好。同一输入框不会因此被再次强制切换。未知读数会中断本次变化确认；离开控件、清除偏好或焦点查询异常会重置观察状态。
+
+输入法的状态读取不总是可靠，尤其是 TSF 模式。无法确认目标、变化发生在两次采样之间或离开太快时，可能无法自动记忆；不会据此猜测用户选择。可使用“此输入框记住英文 / 中文 / 保持不变”命令，然后在 **3 秒内点击目标输入框**，显式指定偏好。终端仍默认英文；代码区、密码框和只读控件不接受偏好操作。
 
 偏好仅保存在当前助手会话内，最多 128 个控件；不会写入磁盘或记录聊天内容。控件重建、重载窗口、修改设置或助手重启后可能失效或清空。新版本安装后建议重载所有 VS Code 窗口，避免旧助手占用共享控制通道。
 
@@ -59,10 +67,10 @@ GitHub Releases 中早期的 `ContextIME-0.4.1.vsix` 使用 `local-tools` 发布
 运行诊断命令后，在 **3 秒内点击目标输入框**，结果会显示在 ContextIME 输出面板：
 
 ```text
-diagnostic reason=editable-input default=zh preference=en observed=en remember=True interval=250
+diagnostic reason=editable-input default=zh preference=en observed=en remember=True interval=100 debounce=80
 ```
 
-`reason` 表示规则依据：`terminal`（终端）、`editable-input`（输入框）、`code-editor`（代码区）、`password`（密码框）、`readonly-or-noneditable`（只读或非输入控件）、`scope-preserve`（按范围保持）或无法获取可访问焦点。`default` 为规则目标，`preference` 为会话偏好；`observed` 仅是传统 Windows IME 接口的参考值，不保证是实际 TSF 状态。诊断不输出控件文字、窗口标题、代码或聊天内容。
+`reason` 表示规则依据：`terminal`（终端）、`editable-input`（输入框）、`code-editor`（代码区）、`password`（密码框）、`readonly-or-noneditable`（只读或非输入控件）、`scope-preserve`（按范围保持）或无法获取可访问焦点。`default` 为规则目标，`preference` 为会话偏好；`observed` 仅是传统 Windows IME 接口的参考值，不保证是实际 TSF 状态。`debounce` 为焦点稳定等待时间（毫秒）。诊断不输出控件文字、窗口标题、代码或聊天内容。
 
 ## 设置
 
@@ -71,7 +79,7 @@ diagnostic reason=editable-input default=zh preference=en observed=en remember=T
 | `autoInput.enabled` | `true` | 启用自动切换；关闭后停止助手 |
 | `autoInput.rememberPreferences` | `true` | 记住当前会话的输入框偏好；关闭后始终按默认规则 |
 | `autoInput.otherInputs` | `chinese` | 其他可编辑输入框也请求中文；设为 `preserve` 可减少对搜索、命令面板等区域的干预 |
-| `autoInput.pollInterval` | `250` | 焦点检查间隔，150–1000 ms；实际切换延迟受控件与输入法影响 |
+| `autoInput.pollInterval` | `100` | 焦点检查间隔，50–1000 ms；实际切换延迟受控件与输入法影响 |
 
 如果只想处理终端与能识别出聊天语义的输入区域：
 

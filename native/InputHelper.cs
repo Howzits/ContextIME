@@ -10,7 +10,7 @@ using System.Windows.Automation;
 internal static class Program {
     static volatile bool running = true;
     static bool otherInputsChinese = true;
-    static int pollInterval = 250;
+    static int pollInterval = 100;
     static bool remember = true;
     static readonly Preferences preferences = new Preferences();
     sealed class Command { internal string Text; internal Action<string> Reply; }
@@ -67,7 +67,8 @@ internal static class Program {
         if (layout == IntPtr.Zero) { Console.WriteLine("No configured input method available for: " + target + " (keeping current input method)"); return; }
         bool posted = Native.PostMessage(s.Focus, 0x0050, IntPtr.Zero, layout);
         Console.WriteLine(DateTime.Now.ToString("HH:mm:ss") + " target=" + target + " layoutRequest=" + posted);
-        Thread.Sleep(150);
+        // Briefly allow the posted layout request to reach the focused control.
+        Thread.Sleep(50);
         if (!running || !StillFocused(s)) return;
         IntPtr ime = Native.ImmGetDefaultIMEWnd(s.Focus);
         if (ime == IntPtr.Zero) return;
@@ -100,11 +101,13 @@ internal static class Program {
             " default=" + (s == null ? "keep" : s.Mode ?? "keep") +
             " preference=" + (s == null || s.Mode != "zh" || !remember ? "none" : preferences.Get(s.Identity, "none")) +
             " observed=" + (s == null || s.Mode == null ? "unknown" : Observe(s) ?? "unknown") +
-            " remember=" + remember + " interval=" + pollInterval;
+            " remember=" + remember + " interval=" + pollInterval + " debounce=" + FocusDebouncer.DelayMilliseconds;
     }
     static int SelfTest() {
         Layouts.SelfTest();
         Preferences.SelfTest();
+        FocusDebouncer.SelfTest();
+        ManualPreferenceTracker.SelfTest();
         CommandBus.SelfTest();
         if (Rules.Decide("Code", "xterm-helper-textarea", true, false) != "en" ||
             Rules.Decide("Code", "search", true, false, false, false) != null ||
@@ -129,7 +132,7 @@ internal static class Program {
             if (arg == "--remember=false") remember = false;
             if (arg.StartsWith("--poll=")) {
                 int parsed;
-                if (Int32.TryParse(arg.Substring(7), out parsed)) pollInterval = Math.Max(150, Math.Min(1000, parsed));
+                if (Int32.TryParse(arg.Substring(7), out parsed)) pollInterval = Math.Max(50, Math.Min(1000, parsed));
             }
         }
         if (args.Length > 0 && args[0] == "--self-test") return SelfTest();
@@ -157,9 +160,9 @@ internal static class Program {
         });
         bool owns = false;
         using (var mutex = new Mutex(false, "Local\\VSCode.AutoInput.Helper")) {
-            string last = null;
-            string baseline = null;
-            DateTime observeAfter = DateTime.MinValue;
+            var debounce = new FocusDebouncer();
+            var clock = Stopwatch.StartNew();
+            var manual = new ManualPreferenceTracker();
             string pendingCommand = null;
             Action<string> reply = Console.WriteLine;
             DateTime commandAt = DateTime.MaxValue;
@@ -177,7 +180,7 @@ internal static class Program {
                             while (commands.TryDequeue(out command)) {
                                 if (command.Text == "clear") {
                                     if (pendingCommand != null) { reply("command=superseded"); pendingCommand = null; }
-                                    preferences.Clear(); baseline = null; last = null; command.Reply("preferences=cleared");
+                                    preferences.Clear(); manual.Reset(); debounce.Reset(); command.Reply("preferences=cleared");
                                 }
                                 else if (command.Text == "diagnose" || command.Text == "pin-en" || command.Text == "pin-zh" || command.Text == "pin-keep") {
                                     if (pendingCommand != null) reply("command=superseded");
@@ -193,30 +196,29 @@ internal static class Program {
                                     preferences.Set(s.Identity, mode);
                                     reply("preference=" + mode + " source=command");
                                     if (mode != "keep") Apply(s, mode);
-                                    last = s.Identity; observeAfter = DateTime.UtcNow.AddMilliseconds(700); baseline = null;
+                                    debounce.Commit(s);
+                                    if (mode != "keep") manual.Start(mode, Observe(s), clock.ElapsedMilliseconds);
+                                    else manual.Reset();
                                 } else reply("preference=skipped reason=not-an-eligible-input");
                                 pendingCommand = null;
                             }
-                            if (s == null) { last = null; }
-                            else if (s.Identity != last) {
-                                last = s.Identity;
-                                baseline = null;
+                            if (debounce.Update(s, clock.ElapsedMilliseconds)) {
+                                manual.Reset();
                                 string target = remember && s.Mode == "zh" ? preferences.Get(s.Identity, s.Mode) : s.Mode;
                                 if (target != null && target != "keep") Apply(s, target);
                                 else Console.WriteLine("focus=preserve");
-                                observeAfter = DateTime.UtcNow.AddMilliseconds(700);
-                            } else if (remember && s.Mode == "zh" && DateTime.UtcNow >= observeAfter && preferences.Get(s.Identity, "") != "keep") {
-                                string observed = Observe(s);
-                                if (observed != null) {
-                                    if (baseline != null && baseline != observed) {
-                                        preferences.Set(s.Identity, observed);
-                                        Console.WriteLine("preference=" + observed + " source=observed-change");
-                                    }
-                                    baseline = observed;
+                                if (remember && s.Mode == "zh" && target != "keep") manual.Start(target, Observe(s), clock.ElapsedMilliseconds);
+                            } else if (!debounce.IsSettled(s)) {
+                                manual.Reset();
+                            } else if (remember && s.Mode == "zh" && preferences.Get(s.Identity, "") != "keep") {
+                                string changed = manual.Update(Observe(s), clock.ElapsedMilliseconds);
+                                if (changed != null) {
+                                    preferences.Set(s.Identity, changed);
+                                    Console.WriteLine("preference=" + changed + " source=observed-change");
                                 }
                             }
                         } catch (Exception error) {
-                            last = null;
+                            debounce.Reset(); manual.Reset();
                             if (pendingCommand != null && DateTime.UtcNow >= commandAt) {
                                 reply("diagnostic reason=focus-query-error error=" + error.GetType().Name);
                                 pendingCommand = null;
@@ -227,7 +229,7 @@ internal static class Program {
                             }
                         }
                     }
-                    Thread.Sleep(pollInterval);
+                    Thread.Sleep(owns ? debounce.NextCheck(clock.ElapsedMilliseconds, pollInterval) : pollInterval);
                 }
             } finally { if (owns) mutex.ReleaseMutex(); }
         }

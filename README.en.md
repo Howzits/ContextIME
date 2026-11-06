@@ -61,7 +61,7 @@ The interface follows the VS Code display language: Chinese for Chinese locales,
 | `autoInput.enabled` | `true` | Enable automatic switching |
 | `autoInput.rememberPreferences` | `true` | Remember input preferences for the current session |
 | `autoInput.otherInputs` | `chinese` | Use `preserve` to leave ordinary inputs, such as search boxes, unchanged |
-| `autoInput.pollInterval` | `250` | Focus-check interval in milliseconds, from 150 to 1000 |
+| `autoInput.pollInterval` | `100` | Focus-check interval in milliseconds, from 50 to 1000 |
 
 Preferences do not persist across helper sessions. Switching depends on control accessibility and IME support. The status bar shows the requested target, not a verified input state; unrecognized chat inputs may need adaptation.
 

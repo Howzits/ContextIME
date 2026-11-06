@@ -7,7 +7,7 @@ const { join } = require('node:path');
 const vm = require('node:vm');
 
 function harness(initial = {}, language = 'zh-cn') {
-  const settings = { enabled: true, otherInputs: 'chinese', pollInterval: 250, ...initial };
+  const settings = { enabled: true, otherInputs: 'chinese', pollInterval: 100, ...initial };
   const children = [];
   const commands = new Map();
   const timers = new Map();
@@ -176,4 +176,10 @@ test('all manifest translations resolve and runtime bundles cover every message'
     assert.ok(bundle[match[2]], match[2]);
     assert.deepEqual(bundle[match[2]].match(/\{\d+\}/g), match[2].match(/\{\d+\}/g));
   }
+});
+
+test('default polling uses the responsive 100 ms interval', () => {
+  const h = harness();
+  assert.ok(h.children[0].args.includes('--poll=100'));
+  h.dispose();
 });

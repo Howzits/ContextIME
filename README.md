@@ -61,7 +61,7 @@ code --install-extension ContextIME.codex-terminal-auto-input
 | `autoInput.enabled` | `true` | 启用自动切换 |
 | `autoInput.rememberPreferences` | `true` | 记住当前会话的输入框偏好 |
 | `autoInput.otherInputs` | `chinese` | 设为 `preserve`，让搜索框等普通输入区域保持不变 |
-| `autoInput.pollInterval` | `250` | 焦点检查间隔，150–1000 ms |
+| `autoInput.pollInterval` | `100` | 焦点检查间隔，50–1000 ms |
 
 偏好不跨助手会话保存。切换效果依赖控件与输入法支持，状态栏显示的是请求目标，不代表已确认实际输入状态；未识别的聊天框可能需要适配。
 
