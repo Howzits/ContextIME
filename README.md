@@ -1,14 +1,37 @@
-<img src="assets/contextime-logo.png" alt="ContextIME Logo" width="128" height="128">
+<p align="center">
+  <img src="assets/contextime-logo.png" alt="ContextIME Logo" width="112" height="112">
+</p>
 
-# ContextIME
+<h1 align="center">ContextIME</h1>
 
-**聊天中文，终端英文。少切一次输入法，少打断一次思路。**
+<p align="center">
+  <strong>聊天中文，终端英文。</strong><br>
+  少切一次输入法，少打断一次思路。
+</p>
 
-用中文向 AI 描述需求，转到终端跑一条命令，再回到聊天框讨论结果——ContextIME 根据输入焦点请求切换中英文，让你少惦记一次输入法。
+<p align="center">
+  为 Windows 上的 VS Code 用户设计，让输入法跟随 AI 编程工作流。
+</p>
 
-为 **Windows 上的 VS Code 用户**设计，适合经常在 AI 聊天和集成终端之间往返的开发者。
+<p align="center">
+  <a href="https://github.com/Howzits/ContextIME/releases/tag/v0.4.0"><img src="https://img.shields.io/badge/version-0.4.0-6574F7?style=flat-square" alt="Version 0.4.0"></a>
+  <img src="https://img.shields.io/badge/platform-Windows_x64-1678D4?style=flat-square" alt="Windows x64">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-20B886?style=flat-square" alt="MIT License"></a>
+</p>
 
-**[下载 ContextIME v0.4.0](https://github.com/Howzits/ContextIME/releases/download/v0.4.0/ContextIME-0.4.0.vsix)** · [安装与使用](#安装与使用) · [配置指南](docs/USAGE.md) · [反馈问题](https://github.com/Howzits/ContextIME/issues)
+<p align="center">
+  <a href="https://github.com/Howzits/ContextIME/releases/download/v0.4.0/ContextIME-0.4.0.vsix"><strong>下载安装</strong></a>
+  &nbsp;·&nbsp;
+  <a href="#安装与使用">快速开始</a>
+  &nbsp;·&nbsp;
+  <a href="docs/USAGE.md">配置指南</a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/Howzits/ContextIME/issues">反馈问题</a>
+  &nbsp;·&nbsp;
+  <a href="#english">English</a>
+</p>
+
+---
 
 ## 从描述需求到执行命令，衔接更顺手
 
