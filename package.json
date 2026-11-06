@@ -1,0 +1,33 @@
+{
+  "name": "codex-terminal-auto-input",
+  "displayName": "ContextIME",
+  "description": "聊天中文，终端英文。面向 AI 编程工作流，随输入焦点自动切换，沿用 Windows 默认输入法。",
+  "version": "0.3.0",
+  "publisher": "local-tools",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/Howzits/ContextIME.git" },
+  "homepage": "https://github.com/Howzits/ContextIME#readme",
+  "bugs": { "url": "https://github.com/Howzits/ContextIME/issues" },
+  "keywords": ["ime", "input method", "chinese", "terminal", "chat", "输入法", "中英切换"],
+  "engines": { "vscode": "^1.96.0" },
+  "categories": ["Other"],
+  "extensionKind": ["ui"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./extension.js",
+  "capabilities": { "untrustedWorkspaces": { "supported": true }, "virtualWorkspaces": true },
+  "contributes": {
+    "commands": [
+      { "command": "autoInput.toggle", "title": "ContextIME: 暂停 / 启用自动输入法" },
+      { "command": "autoInput.showLog", "title": "ContextIME: 查看运行日志" },
+      { "command": "autoInput.restart", "title": "ContextIME: 重启输入法助手" }
+    ],
+    "configuration": {
+      "title": "ContextIME",
+      "properties": {
+        "autoInput.enabled": { "type": "boolean", "default": true, "scope": "application", "description": "启用终端英文 / 聊天及对话框输入区域中文自动切换。" },
+        "autoInput.otherInputs": { "type": "string", "enum": ["chinese", "preserve"], "default": "chinese", "scope": "application", "description": "其他可编辑输入框请求中文，或保持不变。preserve 模式仅处理能识别出聊天语义的输入区域和终端。" },
+        "autoInput.pollInterval": { "type": "integer", "default": 250, "minimum": 150, "maximum": 1000, "scope": "application", "description": "焦点检查间隔（毫秒）。实际切换延迟受控件与输入法影响。" }
+      }
+    }
+  }
+}
