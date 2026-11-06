@@ -13,6 +13,7 @@ manifest = f'''<?xml version="1.0" encoding="utf-8"?>
     <Identity Language="en-US" Id="{package['name']}" Version="{version}" Publisher="{package['publisher']}" />
     <DisplayName>{escape(package['displayName'])}</DisplayName>
     <Description xml:space="preserve">{escape(package['description'])}</Description>
+    <Icon>extension/{escape(package['icon'])}</Icon>
     <Tags>{escape(','.join(package.get('keywords', [])))}</Tags><Categories>Other</Categories>
     <Properties>
       <Property Id="Microsoft.VisualStudio.Code.Engine" Value="{escape(package['engines']['vscode'])}" />
@@ -26,6 +27,7 @@ manifest = f'''<?xml version="1.0" encoding="utf-8"?>
     <Asset Type="Microsoft.VisualStudio.Services.Content.Details" Path="extension/README.md" Addressable="true" />
     <Asset Type="Microsoft.VisualStudio.Services.Content.License" Path="extension/LICENSE" Addressable="true" />
     <Asset Type="Microsoft.VisualStudio.Services.Content.Changelog" Path="extension/CHANGELOG.md" Addressable="true" />
+    <Asset Type="Microsoft.VisualStudio.Services.Icons.Default" Path="extension/{escape(package['icon'])}" Addressable="true" />
   </Assets>
 </PackageManifest>'''
 content_types = '''<?xml version="1.0" encoding="utf-8"?>
@@ -36,6 +38,7 @@ content_types = '''<?xml version="1.0" encoding="utf-8"?>
 <Default Extension="exe" ContentType="application/octet-stream" />
 <Default Extension="vsixmanifest" ContentType="text/xml" />
 <Default Extension="txt" ContentType="text/plain" />
+<Default Extension="png" ContentType="image/png" />
 <Override PartName="/extension/LICENSE" ContentType="text/plain" />
 </Types>'''
 destination = root / 'dist' / f"ContextIME-{package['version']}.vsix"
@@ -43,7 +46,7 @@ destination.parent.mkdir(exist_ok=True)
 with ZipFile(destination, 'w', ZIP_DEFLATED) as archive:
     archive.writestr('extension.vsixmanifest', manifest)
     archive.writestr('[Content_Types].xml', content_types)
-    for name in ['package.json', 'extension.js', 'README.md', 'CHANGELOG.md', 'LICENSE', 'bin/InputHelper.exe', 'docs/COMPATIBILITY.md', 'docs/USAGE.md']:
+    for name in ['package.json', 'extension.js', 'README.md', 'CHANGELOG.md', 'LICENSE', 'bin/InputHelper.exe', 'docs/COMPATIBILITY.md', 'docs/USAGE.md', package['icon']]:
         archive.write(root / name, 'extension/' + name)
 with ZipFile(destination) as archive:
     assert archive.testzip() is None

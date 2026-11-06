@@ -1,3 +1,5 @@
+<img src="assets/contextime-logo.png" alt="ContextIME Logo" width="128" height="128">
+
 # ContextIME
 
 **聊天中文，终端英文。少切一次输入法，少打断一次思路。**
