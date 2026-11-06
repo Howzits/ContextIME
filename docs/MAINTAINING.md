@@ -33,9 +33,29 @@ CI 不替代真实输入法上屏测试。发布前仍需参考 [兼容性记录
 3. 为该提交创建并推送一致的版本标签，例如 `v0.4.2`。标签与包版本不一致时会拒绝发布。
 4. 标签构建通过后，Actions 从构建产物生成 **Release 草稿**，附上原样 VSIX 和校验文件。流程不会覆盖已有 Release 附件。
 5. 在 GitHub 审阅草稿、补充版本说明并实际试用，再发布 Release。
-6. 下载该 Release 的同一个 VSIX，在 Marketplace 管理页上传。不要重新打包。
+6. 配好下方一次性授权后，发布公开的正式 Release 会自动触发 `Publish Marketplace`，下载并核验原始附件后上传市场，不会二次打包。未授权时仍可手动上传同一个 VSIX。
 
-GitHub Release 流程只使用 GitHub 自动提供的仓库令牌，不需要 Marketplace 密钥。市场发布保持手动，避免误发布；版本已存在时不要重用，更新版本号后重新走流程。
+普通提交、Release 草稿和预发布版本不会自动更新市场。安装包版本已存在时跳过重复上传；内容发生变化则应提高版本号后重新走流程。
+
+## 一次性配置市场自动发布
+
+在 [Marketplace 管理页](https://marketplace.visualstudio.com/manage) 打开 Publisher **ContextIME → Trusted Publishing → Create**，填写：
+
+| 字段 | 内容 |
+| --- | --- |
+| Policy name | `ContextIME GitHub Release` |
+| Repository owner | `Howzits` |
+| Repository | `ContextIME` |
+| Workflow | `publish-marketplace.yml`（只填文件名） |
+| Environment | 留空，本流程未使用 GitHub Environment |
+
+保存后，GitHub Actions 可通过 OIDC 获取短时发布凭据，无需 PAT、GitHub Secret，也不要把登录信息发给他人。此授权需要 Publisher 管理员在市场页面完成；仅提交工作流不会自动创建该授权。
+
+可先在 GitHub Actions 选择 **Publish Marketplace → Run workflow**，填入已有 Release 标签，并保持 `dry_run=true`，验证下载、Publisher、平台、源码和 SHA-256，不请求市场发布。演练成功不代表 OIDC 授权已经验证。
+
+正式启用后发布 Release 即会更新市场。若发布时授权配置不正确，修正后可手动运行工作流，选择相同标签、`dry_run=false` 重试；正式模式只接受公开的非预发布 Release。市场验证和搜索同步仍由 Marketplace 完成，不保证立即可见。
+
+参考：[微软 Trusted Publishing 说明](https://developer.microsoft.com/blog/trusted-publishing-visual-studio-marketplace/)。
 
 ## 问题反馈
 

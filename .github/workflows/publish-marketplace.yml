@@ -1,0 +1,90 @@
+name: Publish Marketplace
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing release tag, for example v0.4.2'
+        required: true
+        type: string
+      dry_run:
+        description: 'Verify only; do not publish to Marketplace'
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: contextime-marketplace
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event_name == 'workflow_dispatch' || github.event.release.prerelease == false
+    runs-on: windows-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - name: Validate tag
+        shell: pwsh
+        run: |
+          if ($env:RELEASE_TAG -cnotmatch '^v\d+\.\d+\.\d+$') { throw 'A stable version tag is required.' }
+      - name: Checkout publishing tools
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: automation
+      - name: Checkout release source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          path: source
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: automation/package-lock.json
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Install publishing tool
+        working-directory: automation
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Download the original Release assets
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: |
+          $version = (Get-Content source/package.json -Raw | ConvertFrom-Json).version
+          if ($env:RELEASE_TAG -cne "v$version") { throw 'Release tag and source version differ.' }
+          $release = gh release view $env:RELEASE_TAG --json isDraft,isPrerelease | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0) { throw 'Release not found.' }
+          if ($env:DRY_RUN -ne 'true' -and ($release.isDraft -or $release.isPrerelease)) { throw 'Only public stable Releases may publish to Marketplace.' }
+          gh release download $env:RELEASE_TAG --pattern "ContextIME-$version-win32-x64.vsix" --pattern SHA256SUMS.txt --dir release-assets
+          if ($LASTEXITCODE -ne 0) { throw 'Release asset download failed.' }
+      - name: Verify identity, source files, icon and checksum
+        shell: pwsh
+        run: |
+          python automation/scripts/verify_release.py --source source --artifacts release-assets --tag $env:RELEASE_TAG
+          if ($LASTEXITCODE -ne 0) { throw 'Release verification failed.' }
+      - name: Publish the verified VSIX using Trusted Publishing
+        if: github.event_name == 'release' || inputs.dry_run == false
+        working-directory: source
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          node ../automation/node_modules/@vscode/vsce/vsce publish --oidc --packagePath "../release-assets/ContextIME-$version-win32-x64.vsix" --skip-duplicate
+          if ($LASTEXITCODE -ne 0) { throw 'Marketplace publish failed. Check the Trusted Publishing policy.' }
+      - name: Report verification-only run
+        if: github.event_name == 'workflow_dispatch' && inputs.dry_run
+        run: Write-Host 'Dry run passed. No Marketplace publication was attempted.'

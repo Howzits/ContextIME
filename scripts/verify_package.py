@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parent.parent
 NS = {"v": "http://schemas.microsoft.com/developer/vsx-schema/2011"}
 
 
-def verify(path, expected):
+def verify(path, expected, source_root=ROOT, compare_helper=True):
     with ZipFile(path) as archive:
         if archive.testzip():
             raise ValueError("Corrupt ZIP member")
@@ -33,7 +33,12 @@ def verify(path, expected):
         if not any(a.get("Type") == "Microsoft.VisualStudio.Services.Icons.Default" and a.get("Path") == icon_path for a in asset_icons):
             raise ValueError("Missing VSIX icon asset")
         for member in ("extension.js", "bin/InputHelper.exe", package["icon"], "README.en.md", "docs/USAGE.md", "docs/COMPATIBILITY.md"):
-            if archive.read("extension/" + member) != (ROOT / member).read_bytes():
+            packaged = archive.read("extension/" + member)
+            if member == "bin/InputHelper.exe" and not compare_helper:
+                if not packaged.startswith(b"MZ"):
+                    raise ValueError("Missing Windows native helper")
+                continue
+            if packaged != (source_root / member).read_bytes():
                 raise ValueError(f"Runtime file differs from source: {member}")
         # vsce normalizes names and rewrites README links for the public repository.
         archive.read("extension/readme.md")
