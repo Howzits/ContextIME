@@ -52,8 +52,6 @@ code --install-extension ContextIME.codex-terminal-auto-input
 
 Enabled by default. Try typing in a chat input and the terminal; click the status bar item to pause.
 
-> Upgrading from the local build? Uninstall `local-tools.codex-terminal-auto-input` first to avoid running both versions.
-
 ## Settings
 
 | Setting | Default | Purpose |

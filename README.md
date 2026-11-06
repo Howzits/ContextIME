@@ -52,8 +52,6 @@ code --install-extension ContextIME.codex-terminal-auto-input
 
 安装后默认启用。切换到聊天框或终端试打，点击状态栏可暂停。
 
-> 使用过旧版？先卸载 `local-tools.codex-terminal-auto-input`，避免两个版本同时运行。
-
 ## 常用设置
 
 | 设置 | 默认值 | 用途 |
